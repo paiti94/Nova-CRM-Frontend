@@ -1,0 +1,25 @@
+# Node
+node_modules/
+.env
+.env.local
+.env.client
+.env.server
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel / Railway / Render
+.vercel/
+.netlify/
+.output/
+
+# IDEs
+.vscode/
+.idea/
