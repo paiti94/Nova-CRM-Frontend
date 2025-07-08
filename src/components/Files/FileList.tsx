@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FileIcon, FolderIcon, DownloadIcon, TrashIcon } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, useAuthenticatedApi } from '../../services/api';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -11,6 +11,7 @@ interface File {
   size: number;
   createdAt: string;
   key: string;
+  readBy: string[];
 }
 
 interface Folder {
@@ -34,7 +35,17 @@ export const FileList: React.FC<FileListProps> = ({
 }) => {
   const { isAuthenticated } = useAuth0();
   const { getAuthToken } = useAuthenticatedApi();
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      await getAuthToken(); // Ensure we have a valid token
+      const { data } = await api.get('/users/me'); // Fetch user data
+      return data;
+    },
+    enabled: isAuthenticated, // Only run if authenticated
+  });
 
+  const isAdmin = userData?.role === 'admin';
   const queryClient = useQueryClient();
 
   const downloadMutation = useMutation({
@@ -65,6 +76,14 @@ export const FileList: React.FC<FileListProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const handleFileClick = async (file: File) => {
+    if ((Array.isArray(file.readBy) ? file.readBy : []).includes(userData?.id)) return;
+
+    await getAuthToken();
+    await api.patch(`/files/${file._id}/mark-read`, { userId: userData?.id });
+    queryClient.invalidateQueries({ queryKey: ['folderContents'] });
+  };
+
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 gap-4">
@@ -85,9 +104,12 @@ export const FileList: React.FC<FileListProps> = ({
         ))}
 
         {files.map((file) => (
-          <div
+            <div
             key={file._id}
-            className="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50"
+            onClick={() => handleFileClick(file)}
+            className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50 ${
+              (Array.isArray(file.readBy) ? file.readBy : []).includes(userData?.id || '') 
+            }`}
           >
             <FileIcon className="text-blue-500" size={24} />
             <div className="flex-1">
@@ -104,12 +126,14 @@ export const FileList: React.FC<FileListProps> = ({
               >
                 <DownloadIcon size={20} />
               </button>
-              <button
-                onClick={() => deleteMutation.mutate(file._id)}
-                className="p-2 text-gray-400 hover:text-red-500"
-              >
-                <TrashIcon size={20} />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => deleteMutation.mutate(file._id)}
+                  className="p-2 text-gray-400 hover:text-red-500"
+                >
+                  <TrashIcon size={20} />
+                </button>
+              )}
             </div>
           </div>
         ))}

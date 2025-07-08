@@ -6,7 +6,10 @@ import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
 type TagOption = { value: string; label: string };
-
+const QUERY_KEYS = {
+  TAGS: 'tags',
+  CLIENTS: 'clients',
+}
 const customStyles = {
   control: (provided: any) => ({
     ...provided,
@@ -64,8 +67,6 @@ export const ClientList = ({
   const [newRole, setNewRole] = useState<string>('');
   const [clientTags, setClientTags] = useState<{ [clientId: string]: string[] }>({});
 
-  const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
-
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ['clients', searchQuery],
     queryFn: async () => {
@@ -74,6 +75,16 @@ export const ClientList = ({
       return data;
     },
   });
+
+  const { data: availableTags = [] } = useQuery({
+    queryKey: [QUERY_KEYS.TAGS],
+    queryFn: async () => {
+      await getAuthToken();
+      const { data } = await api.get('/tags');
+      return data;
+    }
+  });
+
 
   useEffect(() => {
     if (clients) {
@@ -85,19 +96,6 @@ export const ClientList = ({
     }
   }, [clients]);
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        await getAuthToken();
-        const { data } = await api.get('/tags');
-        setAvailableTags(data);
-      } catch (error) {
-        console.error('Failed to fetch tags:', error);
-      }
-    };
-  
-    fetchTags();
-  }, []);
   
   const deleteMutation = useMutation({
     mutationFn: async (clientId: string) => {
@@ -121,12 +119,12 @@ export const ClientList = ({
 
   const updateTagsMutation = useMutation({
     mutationFn: async ({ clientId, tags }: { clientId: string; tags: string[] }) => {
-      await getAuthToken(); 
-      return api.patch(`/users/tags`, { id: clientId, tags }); 
+      await getAuthToken();
+      return api.patch('/users/tags', { id: clientId, tags });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] }); 
-    },
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TAGS] });
+    }
   });
 
   const createTagMutation = useMutation({
@@ -142,35 +140,37 @@ export const ClientList = ({
     setIsModalOpen(true);
   };
 
-  const handleTagChange = (
-    clientId: string,
-    selectedTags: TagOption[]
-  ) => {
+ const handleTagChange = async (clientId: string, selectedTags: TagOption[]) => {
     const tagValues = selectedTags.map(tag => tag.value);
-  
-    // Update client's tag list
+
+    // Update local state
     setClientTags(prev => ({
       ...prev,
       [clientId]: tagValues,
     }));
-  
-    // Find new tags not in DB
-    const newOptions = selectedTags.filter(
-      tag => !availableTags.some(opt => opt.value === tag.value)
+
+    // Find new tags
+    const newTags = selectedTags.filter(
+      tag => !availableTags.some((existingTag: { value: string; }) => existingTag.value === tag.value)
     );
-  
-    if (newOptions.length > 0) {
-      setAvailableTags(prev => [...prev, ...newOptions]);
-  
-      // Save new tags to DB
-      newOptions.forEach(tag => {
-        createTagMutation.mutate(tag);
-      });
+
+    // If there are new tags, create them first
+    if (newTags.length > 0) {
+      try {
+        await Promise.all(newTags.map(async (tag) => {
+          await api.post('/tags', tag);
+        }));
+        
+        // Invalidate tags query to refresh the list
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TAGS] });
+      } catch (error) {
+        console.error('Error creating new tags:', error);
+      }
     }
-  
+
+    // Update client's tags
     updateTagsMutation.mutate({ clientId, tags: tagValues });
   };
-  
   
   
 
@@ -240,7 +240,7 @@ export const ClientList = ({
                 isMulti
                 styles={customStyles}
                 value={(clientTags[client._id] ?? [])
-                  .map(tagVal => availableTags.find(opt => opt.value === tagVal))
+                  .map(tagVal => availableTags.find((opt: { value: string; }) => opt.value === tagVal))
                   .filter(Boolean)}
                 onChange={(selectedOptions) =>
                   handleTagChange(client._id, selectedOptions as { value: string; label: string }[])

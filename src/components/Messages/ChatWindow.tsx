@@ -112,7 +112,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ contactName, contactId, 
           />
           <div>
             <h2 className="text-sm font-medium text-gray-900">{contactName}</h2>
-            <span className="text-xs text-green-500">Online</span>
+            {/* <span className="text-xs text-green-500">Online</span> */}
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 export const Files = () => {
   const { getAuthToken } = useAuthenticatedApi(); // Get the getAuthToken function
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth0(); // Use Auth0 hook
+  const { isAuthenticated, isLoading: authLoading } = useAuth0(); // Use Auth0 hook
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
