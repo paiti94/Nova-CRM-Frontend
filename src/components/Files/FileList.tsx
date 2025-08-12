@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FileIcon, FolderIcon, DownloadIcon, TrashIcon } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, useAuthenticatedApi } from '../../services/api';
 import { useAuth0 } from '@auth0/auth0-react';
+import { downloadAllFilesAsZip } from '../../services/fileApi';
 
 interface File {
   _id: string;
@@ -11,7 +12,6 @@ interface File {
   size: number;
   createdAt: string;
   key: string;
-  readBy: string[];
 }
 
 interface Folder {
@@ -25,6 +25,7 @@ interface FileListProps {
   folders: Folder[];
   onFolderClick: (folderId: string) => void;
   clientId?: string | null; // Make clientId optional
+  selectedFolderId?: string | null; 
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -32,20 +33,10 @@ export const FileList: React.FC<FileListProps> = ({
   folders,
   onFolderClick,
   clientId,
+  selectedFolderId,
 }) => {
   const { isAuthenticated } = useAuth0();
   const { getAuthToken } = useAuthenticatedApi();
-  const { data: userData, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      await getAuthToken(); // Ensure we have a valid token
-      const { data } = await api.get('/users/me'); // Fetch user data
-      return data;
-    },
-    enabled: isAuthenticated, // Only run if authenticated
-  });
-
-  const isAdmin = userData?.role === 'admin';
   const queryClient = useQueryClient();
 
   const downloadMutation = useMutation({
@@ -53,6 +44,12 @@ export const FileList: React.FC<FileListProps> = ({
       await getAuthToken(); 
       const { data } = await api.get(`/files/download/${fileId}`);
       window.open(data.downloadUrl, '_blank');
+    },
+  });
+
+  const downloadAllMutation = useMutation({
+    mutationFn: async (folderId: string) => {
+      await downloadAllFilesAsZip(folderId);
     },
   });
 
@@ -76,16 +73,20 @@ export const FileList: React.FC<FileListProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleFileClick = async (file: File) => {
-    if ((Array.isArray(file.readBy) ? file.readBy : []).includes(userData?.id)) return;
-
-    await getAuthToken();
-    await api.patch(`/files/${file._id}/mark-read`, { userId: userData?.id });
-    queryClient.invalidateQueries({ queryKey: ['folderContents'] });
-  };
-
   return (
     <div className="p-6">
+       {files.length > 1 && selectedFolderId && (
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() => { console.log("Download all clicked!", selectedFolderId);downloadAllMutation.mutate(selectedFolderId)}}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            title="Download all files in this folder"
+          >
+            <DownloadIcon size={20} className="mr-2" />
+            Download All
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4">
         {folders.map((folder) => (
           <div
@@ -104,12 +105,11 @@ export const FileList: React.FC<FileListProps> = ({
         ))}
 
         {files.map((file) => (
-            <div
+          <div
             key={file._id}
-            onClick={() => handleFileClick(file)}
-            className={`flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50 ${
-              (Array.isArray(file.readBy) ? file.readBy : []).includes(userData?.id || '') 
-            }`}
+            draggable
+            onDragStart={e => e.dataTransfer.setData("application/file-id", file._id)}
+            className="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50"
           >
             <FileIcon className="text-blue-500" size={24} />
             <div className="flex-1">
@@ -126,14 +126,12 @@ export const FileList: React.FC<FileListProps> = ({
               >
                 <DownloadIcon size={20} />
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => deleteMutation.mutate(file._id)}
-                  className="p-2 text-gray-400 hover:text-red-500"
-                >
-                  <TrashIcon size={20} />
-                </button>
-              )}
+              <button
+                onClick={() => deleteMutation.mutate(file._id)}
+                className="p-2 text-gray-400 hover:text-red-500"
+              >
+                <TrashIcon size={20} />
+              </button>
             </div>
           </div>
         ))}

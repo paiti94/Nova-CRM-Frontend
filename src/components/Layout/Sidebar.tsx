@@ -25,6 +25,11 @@ export const Sidebar = () => {
     enabled: isAuthenticated, 
   });
 
+  const handleOutlookConnect = () => {
+    window.location.href = `${api.defaults.baseURL}/microsoft/login`;
+  };
+  
+
   const isAdmin = userData?.role === 'admin';
   return (
     <div className="h-screen w-64 bg-gray-900 text-white p-4 fixed left-0 top-0">
@@ -121,6 +126,19 @@ export const Sidebar = () => {
           <span>Admin</span>
         </NavLink>
         )} */}
+        <NavLink
+          to="/outlook"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800 ${
+              isActive ? 'bg-gray-800' : ''
+            }`
+          }
+        >
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5zm14 2v4.18A3 3 0 0017 7c-1.65 0-3 1.35-3 3s1.35 3 3 3a3 3 0 002-0.82V19H5V5h14zm-4 5a1 1 0 110 2 1 1 0 010-2z"/>
+          </svg>
+          <span>Outlook Integration</span>
+        </NavLink>
       </nav>
     </div>
   );

@@ -4,11 +4,7 @@ import { ClientList } from '../components/Clients/ClientList';
 import { AddClientModal } from '../components/Clients/AddClientModal';
 import { api, useAuthenticatedApi } from '../services/api';
 import Select from 'react-select';
-import { useQuery } from '@tanstack/react-query';
-const QUERY_KEYS = {
-  TAGS: 'tags',
-  CLIENTS: 'clients',
-}
+
 const Clients = () => {
   const { getAuthToken } = useAuthenticatedApi();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,14 +12,8 @@ const Clients = () => {
   const [filterBy, setFilterBy] = useState<'name' | 'email' | 'company' | 'phone' | 'tags' | 'role'>('name');
   const [showFilterOptions, setShowFilterOptions] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const { data: availableTags = [] } = useQuery({
-    queryKey: [QUERY_KEYS.TAGS],
-    queryFn: async () => {
-      await getAuthToken();
-      const { data } = await api.get('/tags');
-      return data;
-    }
-  });
+  const [availableTags, setAvailableTags] = useState<{ value: string; label: string }[]>([]);
+
   const filterOptions = [
     { value: 'name', label: 'Name' },
     { value: 'email', label: 'Email' },
@@ -33,7 +23,19 @@ const Clients = () => {
     { value: 'role', label: 'Role' },
   ];
 
-
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        await getAuthToken();
+        const { data } = await api.get('/tags');
+        setAvailableTags(data);
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    };
+  
+    fetchTags();
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -91,7 +93,7 @@ const Clients = () => {
      <Select
        isMulti
        placeholder="Select tags..."
-       value={availableTags.filter((tag: { value: string; }) => selectedTags.includes(tag.value))}
+       value={availableTags.filter(tag => selectedTags.includes(tag.value))}
        onChange={(selected) => {
          const tagValues = (selected as { value: string; label: string }[]).map(tag => tag.value);
          setSelectedTags(tagValues);

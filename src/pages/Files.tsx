@@ -10,7 +10,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 export const Files = () => {
   const { getAuthToken } = useAuthenticatedApi(); // Get the getAuthToken function
-  const { isAuthenticated, isLoading: authLoading } = useAuth0(); // Use Auth0 hook
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth0(); // Use Auth0 hook
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -77,12 +77,14 @@ export const Files = () => {
             >
               New Folder
             </button>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Upload Files
-            </button>
+            {selectedFolderId && ( 
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Upload Files
+                </button>
+              )}
           </div>
         ) : null}
       </div>
@@ -110,6 +112,7 @@ export const Files = () => {
               folders={folderContents?.folders || []}
               onFolderClick={setSelectedFolderId}
               clientId={effectiveClientId}
+              selectedFolderId={selectedFolderId} 
             />
           </div>
           {showNewFolderModal && (

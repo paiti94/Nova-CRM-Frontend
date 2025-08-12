@@ -13,6 +13,7 @@ interface DashboardStats {
   taskGrowth: number;
   messageGrowth: number;
   fileGrowth: number;
+  unOpenedFiles: number;
 }
 
 function Dashboard() {
@@ -104,7 +105,7 @@ function Dashboard() {
             <h3 className="text-lg font-semibold text-gray-700">Files</h3>
             <FolderTree className="text-orange-500" size={24} />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats?.totalFiles}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats?.unOpenedFiles}</p>
         </div>
       </div>
     </div>

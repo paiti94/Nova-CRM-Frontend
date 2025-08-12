@@ -18,7 +18,10 @@ const debugLog = (message: string, data?: any) => {
     //   console.log(`[API Debug] ${message}`, data || '');
     }
 };
-
+export function setApiAuthHeader(token: string | null) {
+  if (token) api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  else delete api.defaults.headers.common.Authorization;
+}
 // Custom hook to handle authentication
 export const useAuthenticatedApi = () => {
   const { getAccessTokenSilently, loginWithRedirect } = useAuth0();

@@ -11,6 +11,8 @@ import 'primereact/resources/themes/saga-blue/theme.css'; // Choose your theme
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import VerifiedPage from './pages/Verified';
+import { OutlookIntegrationPage } from './pages/OutlookIntegrationPage';
+import ApiAuthProvider from './providers/ApiAuthProvider';
 // Pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -22,7 +24,7 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { getAccessTokenSilently, isLoading, isAuthenticated } = useAuth0();
-
+ 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -36,6 +38,7 @@ function AppRoutes() {
       <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
       <Route path="/admin-setup" element={<AdminSetup />} />
       <Route path="/auth/verified" element={<VerifiedPage />} />
+      
       {isAuthenticated ? (
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -95,8 +98,9 @@ function AppRoutes() {
               </React.Suspense>
             }
           />
-            
+        <Route path="/outlook" element={<OutlookIntegrationPage />} />
         </Route>
+        
       ) : (
         <Route path="*" element={<Navigate to="/login" replace />} />
       )}
@@ -119,7 +123,9 @@ function App() {
     >
        {/* <AuthProvider audience={audience} scope={scope}> */}
         <BrowserRouter>
-          <AppRoutes />
+          {/* <ApiAuthProvider> */}
+            <AppRoutes />
+          {/* </ApiAuthProvider> */}
         </BrowserRouter>
       {/* </AuthProvider> */}
     </Auth0Provider>
