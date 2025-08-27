@@ -93,6 +93,7 @@ export const ContactList: React.FC<ContactListProps> = ({ onSelectContact, selec
     onSelectContact(contactId);
     onSelectedContactName(contactName);
     onSelectedContactAvatar(contactAvatar);
+    console.log(contactId)
 
     // Mark all messages as read for this contact
     await api.patch(`/messages/read/${contactId}`, { userId }); // Send userId in the request body
@@ -119,7 +120,7 @@ export const ContactList: React.FC<ContactListProps> = ({ onSelectContact, selec
         {filteredContacts.map((contact: any) => (
           <button
             key={contact._id}
-            onClick={() => handleSelectContact(contact._id, contact.name, contact.avatar)} 
+            onClick={() => handleSelectContact(contact.id, contact.name, contact.avatar)} 
             className={`w-full p-4 flex items-start space-x-3 hover:bg-gray-50 ${
               selectedContact === contact._id ? 'bg-gray-50' : ''
             }`}

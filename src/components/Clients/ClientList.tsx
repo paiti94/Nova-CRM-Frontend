@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from '../Modal'; 
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import type { ActionMeta, MultiValue } from 'react-select';
 
 type TagOption = { value: string; label: string };
 
@@ -36,7 +37,7 @@ const customStyles = {
 };
 
 interface Client {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   company: string;
@@ -65,6 +66,9 @@ export const ClientList = ({
   const [clientTags, setClientTags] = useState<{ [clientId: string]: string[] }>({});
 
   const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name?: string } | null>(null);
+
 
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ['clients', searchQuery],
@@ -79,7 +83,7 @@ export const ClientList = ({
     if (clients) {
       const initialTags: { [key: string]: string[] } = {};
       clients.forEach((client) => {
-        initialTags[client._id] = client.tags ?? [];
+        initialTags[client.id] = client.tags ?? [];
       });
       setClientTags(initialTags);
     }
@@ -141,36 +145,54 @@ export const ClientList = ({
     setNewRole(newRole);
     setIsModalOpen(true);
   };
+  // Open delete confirm
+  const confirmDelete = (clientId: string, name?: string) => {
+    setDeleteTarget({ id: clientId, name });
+    setIsDeleteOpen(true);
+  };
 
+  // Execute delete after confirm
+  const handleConfirmDelete = () => {
+   if (!deleteTarget) return;
+   deleteMutation.mutate(deleteTarget.id, {
+     onSettled: () => setIsDeleteOpen(false),
+   });
+  };
   const handleTagChange = (
     clientId: string,
-    selectedTags: TagOption[]
+    selected: MultiValue<TagOption>,
+    actionMeta: ActionMeta<TagOption>
   ) => {
-    const tagValues = selectedTags.map(tag => tag.value);
-  
-    // Update client's tag list
-    setClientTags(prev => ({
-      ...prev,
-      [clientId]: tagValues,
-    }));
-  
-    // Find new tags not in DB
-    const newOptions = selectedTags.filter(
-      tag => !availableTags.some(opt => opt.value === tag.value)
-    );
-  
-    if (newOptions.length > 0) {
-      setAvailableTags(prev => [...prev, ...newOptions]);
-  
-      // Save new tags to DB
-      newOptions.forEach(tag => {
-        createTagMutation.mutate(tag);
-      });
+    // removal of a single tag
+    if (actionMeta.action === 'remove-value' || actionMeta.action === 'pop-value') {
+      const removed = actionMeta.removedValue;
+      const ok = window.confirm(`Remove tag "${removed?.label}"?`);
+      if (!ok) return; // ⬅️ do nothing; because value is controlled, UI will revert
     }
   
+    // clearing all tags
+    if (actionMeta.action === 'clear') {
+      const ok = window.confirm('Remove all tags?');
+      if (!ok) return;
+    }
+  
+    const tagValues = (selected as TagOption[]).map(t => t.value);
+  
+    // update local state (controlled value)
+    setClientTags(prev => ({ ...prev, [clientId]: tagValues }));
+  
+    // upsert any newly created tags
+    const newOptions = (selected as TagOption[]).filter(
+      tag => !availableTags.some(opt => opt.value === tag.value)
+    );
+    if (newOptions.length) {
+      setAvailableTags(prev => [...prev, ...newOptions]);
+      newOptions.forEach(tag => createTagMutation.mutate(tag));
+    }
+  
+    // persist
     updateTagsMutation.mutate({ clientId, tags: tagValues });
   };
-  
   
   
 
@@ -185,7 +207,8 @@ export const ClientList = ({
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    // <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div className="bg-white shadow rounded-lg">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -222,7 +245,7 @@ export const ClientList = ({
               }
             })
             .map((client) => (
-            <tr key={client._id} className="hover:bg-gray-50">
+            <tr key={client.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900">{client.name}</div>
               </td>
@@ -236,28 +259,27 @@ export const ClientList = ({
                 <div className="text-sm text-gray-500">{client.phone}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <CreatableSelect
-                isMulti
-                styles={customStyles}
-                value={(clientTags[client._id] ?? [])
-                  .map(tagVal => availableTags.find(opt => opt.value === tagVal))
-                  .filter(Boolean)}
-                onChange={(selectedOptions) =>
-                  handleTagChange(client._id, selectedOptions as { value: string; label: string }[])
-                }
-                options={availableTags}
-                className="react-select-container"
-                classNamePrefix="react-select"
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
-                formatCreateLabel={(inputValue) => `+ Create tag "${inputValue}"`}
-               />
-
+                <CreatableSelect
+                  isMulti
+                  styles={customStyles}
+                  value={(clientTags[client.id] ?? [])
+                    .map(tagVal => availableTags.find(opt => opt.value === tagVal))
+                    .filter(Boolean) as TagOption[]}
+                  onChange={(selected, actionMeta) =>
+                    handleTagChange(client.id, selected as MultiValue<TagOption>, actionMeta)
+                  }
+                  options={availableTags}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  formatCreateLabel={(inputValue) => `+ Create tag "${inputValue}"`}
+                />
               </td>   
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <Select
                   value={roleOptions.find(option => option.value === client.role)}
-                  onChange={(selectedOption) => handleRoleChange(client._id, selectedOption?.value || '')}
+                  onChange={(selectedOption) => handleRoleChange(client.id, selectedOption?.value || '')}
                   options={roleOptions}
                   className="basic-single"
                   classNamePrefix="select"
@@ -265,10 +287,15 @@ export const ClientList = ({
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => deleteMutation.mutate(client._id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    confirmDelete(client.id, client.name); // <-- opens the modal
+                  }}
                   className="text-red-600 hover:text-red-900 ml-2"
+                  disabled={deleteMutation.isPending}
                 >
-                  Delete
+                  {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
                 </button>
               </td>
             </tr>
@@ -282,6 +309,17 @@ export const ClientList = ({
         onConfirm={handleConfirmUpdate}
         title="Confirm Role Update"
         message={`Are you sure you want to update the role to "${newRole}"?`}
+      />
+     <Modal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Client?"
+        message={
+          deleteTarget?.name
+            ? `This will permanently delete ${deleteTarget.name}. This action cannot be undone.`
+            : 'This will permanently delete the selected client. This action cannot be undone.'
+        }
       />
     </div>
   );

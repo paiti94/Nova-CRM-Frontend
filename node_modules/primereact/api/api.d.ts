@@ -48,7 +48,7 @@ import { InputSwitchPassThroughOptions } from '../inputswitch/inputswitch';
 import { InputTextPassThroughOptions } from '../inputtext/inputtext';
 import { InputTextareaPassThroughOptions } from '../inputtextarea/inputtextarea';
 import { KnobPassThroughOptions } from '../knob/knob';
-import { ListboxPassThroughOptions } from '../listbox/listbox';
+import { ListBoxPassThroughOptions } from '../listbox/listbox';
 import { MegaMenuPassThroughOptions } from '../megamenu/megamenu';
 import { MentionPassThroughOptions } from '../mention/mention';
 import { MenuPassThroughOptions } from '../menu/menu';
@@ -476,7 +476,7 @@ export interface PrimeReactPTOptions {
     /**
      * Custom passthrough(pt) options for Listbox.
      */
-    listbox?: ListboxPassThroughOptions;
+    listbox?: ListBoxPassThroughOptions;
     /**
      * Custom passthrough(pt) options for MegaMenu.
      */
@@ -720,7 +720,8 @@ export declare function addLocale(locale: string, options: LocaleOptions): void;
  * @param {*} value - Option value.
  * @param {string} locale - Locale string.
  */
-export declare function updateLocaleOption(key: string, value: any, locale: string): void;
+export declare function updateLocaleOption<Key extends keyof LocaleOptions>(key: Key, value: Key extends keyof LocaleOptions ? LocaleOptions[Key] : any, locale: string): void;
+export declare function updateLocaleOption<Key extends string>(key: Key, value: Key extends keyof LocaleOptions ? LocaleOptions[Key] : any, locale: string): void;
 /**
  * Changes the option values of a locale.
  * @param {LocaleOptions} options - Locale options.
@@ -732,6 +733,7 @@ export declare function updateLocaleOptions(options: object, locale: string): vo
  * @param {string} key - Option key.
  * @param {string} locale - Locale string.
  */
+export declare function localeOption<Key extends keyof LocaleOptions>(key: Key, locale: string): LocaleOptions[Key];
 export declare function localeOption(key: string, locale: string): any;
 /**
  * Returns the values of locale options.
@@ -1328,6 +1330,7 @@ export interface PrimeIconsOptions {
     readonly GLOBE: string;
     readonly GOOGLE: string;
     readonly HASHTAG: string;
+    readonly HEADPHONES: string;
     readonly HEART: string;
     readonly HEART_FILL: string;
     readonly HISTORY: string;
@@ -1347,6 +1350,7 @@ export interface PrimeIconsOptions {
     readonly LOCK_OPEN: string;
     readonly MAP: string;
     readonly MAP_MARKER: string;
+    readonly MARS: string;
     readonly MICROSOFT: string;
     readonly MINUS: string;
     readonly MINUS_CIRCLE: string;
@@ -1439,12 +1443,14 @@ export interface PrimeIconsOptions {
     readonly USER_MINUS: string;
     readonly USER_PLUS: string;
     readonly USERS: string;
+    readonly VENUS: string;
     readonly VIDEO: string;
     readonly VIMEO: string;
     readonly VOLUME_DOWN: string;
     readonly VOLUME_OFF: string;
     readonly VOLUME_UP: string;
     readonly WALLET: string;
+    readonly WAVE_PULSE: string;
     readonly WHATSAPP: string;
     readonly WIFI: string;
     readonly WINDOW_MAXIMIZE: string;

@@ -29,7 +29,11 @@ export const Files = () => {
 
   const isAdmin = userData?.role === 'admin';
   const effectiveClientId = isAdmin ? selectedClientId : userData?._id;
-
+  useEffect(() => {
+    if (userData?._id && (selectedClientId == null || selectedClientId === '')) {
+      setSelectedClientId(userData._id);
+    }
+  }, [userData?._id, selectedClientId]);
   // Fetch folder contents
   const { data: folderContents, isLoading: contentsLoading } = useQuery({
     queryKey: ['folderContents', effectiveClientId, selectedFolderId],

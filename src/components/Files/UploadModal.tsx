@@ -12,7 +12,37 @@ interface UploadModalProps {
   onClose: () => void;
   onUploadSuccess: (attachment: any) => void;
 }
+function guessMimeFromName(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    pdf: 'application/pdf',
+    txt: 'text/plain',
+    csv: 'text/csv',
+    json: 'application/json',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    zip: 'application/zip',
+    rar: 'application/vnd.rar',
+    '7z': 'application/x-7z-compressed',
+    mp3: 'audio/mpeg',
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+  };
+  return map[ext] || 'application/octet-stream';
+}
 
+function ensureMime(file: File): string {
+  return file.type || guessMimeFromName(file.name);
+}
 export const UploadModal: React.FC<UploadModalProps> = ({ clientId, folderId, onClose, taskManagement, taskId, onUploadSuccess }) => {
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
@@ -45,32 +75,35 @@ export const UploadModal: React.FC<UploadModalProps> = ({ clientId, folderId, on
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       await getAuthToken();
+  
+      const contentType = ensureMime(file);
+  
       const { data: { presignedUrl, fileId, key } } = await api.post('/files/presigned-url', {
         fileName: file.name,
-        fileType: file.type,
+        fileType: contentType,                 // ⬅️ use fallback
         folderId: selectedFolderId,
         clientId,
       });
-
+  
       await axios.put(presignedUrl, file, {
-        headers: { 'Content-Type': file.type },
-        onUploadProgress: (progressEvent) => {
-          const progress = (progressEvent.loaded / (progressEvent.total ?? 0)) * 100;
+        headers: { 'Content-Type': contentType }, // ⬅️ use fallback
+        onUploadProgress: (e) => {
+          const progress = (e.loaded / (e.total ?? 0)) * 100;
           setUploadProgress(progress);
         },
       });
-
+  
       const response = await api.post('/files', {
         fileId,
         name: file.name,
-        type: file.type,
+        type: contentType,                     // ⬅️ use fallback
         size: file.size,
         folderId: selectedFolderId,
         taskId,
         clientId,
         key,
       });
-
+  
       return response.data;
     },
     onSuccess: (data) => {

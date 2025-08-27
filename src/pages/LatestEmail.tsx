@@ -14,8 +14,8 @@ export function LatestEmail({ enabled }: { enabled: boolean }) {
         <h2 className="font-bold text-lg mb-2">Latest Email</h2>
         <p><strong>From:</strong> {data.from}</p>
         <p><strong>Subject:</strong> {data.subject}</p>
-        <p><strong>Received:</strong> {new Date(data.received).toLocaleString()}</p>
-        <p className="text-gray-700 mt-2">{data.bodyPreview}</p>
+        <p><strong>Received:</strong> {new Date(data.receivedAt).toLocaleString()}</p>
+        <p className="text-gray-700 mt-2">{data.bodyText}</p>
       </div>
     );
   }

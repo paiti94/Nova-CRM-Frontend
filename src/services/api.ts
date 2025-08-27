@@ -63,17 +63,34 @@ api.interceptors.request.use(
       }
 );
  // Add response interceptor for token expiration
- api.interceptors.response.use(
-    (response) => response,
-    async (error: AxiosError) => {
-      if (error.response?.status === 401) {
-        debugLog('Unauthorized error - clearing token');
-        localStorage.removeItem('access_token');
-        await loginWithRedirect();
-      }
-      return Promise.reject(error);
+//  api.interceptors.response.use(
+//     (response) => response,
+//     async (error: AxiosError) => {
+//       if (error.response?.status === 401) {
+//         debugLog('Unauthorized error - clearing token');
+//         localStorage.removeItem('access_token');
+//         await loginWithRedirect();
+//       }
+//       return Promise.reject(error);
+//     }
+//   );
+// api.ts response interceptor
+api.interceptors.response.use(
+  r => r,
+  async (error: AxiosError) => {
+    const status = error.response?.status;
+    const url = (error.config?.url || '').toString();
+
+    if (status === 401 && !url.includes('/microsoft/')) {
+      localStorage.removeItem('access_token');
+      // optional: show toast
+      // and only then redirect
+      // await loginWithRedirect();
     }
-  );
+    return Promise.reject(error);
+  }
+);
+
 
 
   return {

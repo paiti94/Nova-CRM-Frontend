@@ -126,7 +126,8 @@ export const Sidebar = () => {
           <span>Admin</span>
         </NavLink>
         )} */}
-        <NavLink
+
+         {isAdmin && (<NavLink
           to="/outlook"
           className={({ isActive }) =>
             `flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800 ${
@@ -139,6 +140,7 @@ export const Sidebar = () => {
           </svg>
           <span>Outlook Integration</span>
         </NavLink>
+        )}
       </nav>
     </div>
   );

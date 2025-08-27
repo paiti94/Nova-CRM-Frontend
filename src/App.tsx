@@ -4,15 +4,17 @@ import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MainLayout } from './components/Layout/MainLayout';
 import { Login } from './pages/Login';
-import { TaskManagement } from './components/Tasks/TaskManagement';
+import { TaskManagement } from './pages/TaskManagement';
 import AdminPage from './pages/AdminPage';
 import { AdminSetup } from './pages/AdminSetup';
+
 import 'primereact/resources/themes/saga-blue/theme.css'; // Choose your theme
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+
 import VerifiedPage from './pages/Verified';
 import { OutlookIntegrationPage } from './pages/OutlookIntegrationPage';
-import ApiAuthProvider from './providers/ApiAuthProvider';
+import OutlookPopupDone from './pages/OutlookPopupDone';
 // Pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -35,10 +37,11 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/outlook-popup-done" element={<OutlookPopupDone />} />
       <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
       <Route path="/admin-setup" element={<AdminSetup />} />
       <Route path="/auth/verified" element={<VerifiedPage />} />
-      
+
       {isAuthenticated ? (
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -99,6 +102,7 @@ function AppRoutes() {
             }
           />
         <Route path="/outlook" element={<OutlookIntegrationPage />} />
+ 
         </Route>
         
       ) : (

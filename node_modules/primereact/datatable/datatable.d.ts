@@ -363,11 +363,11 @@ interface DataTableSelectionSingleChangeEvent<TValue extends DataTableValueArray
 }
 
 /**
- * Custom cell selection change event.
+ * Custom cell single selection change event.
  * @see {@link DataTableProps.onSelectionChange}
  * @event
  */
-interface DataTableSelectionCellChangeEvent<TValue extends DataTableValueArray> {
+interface DataTableSelectionCellSingleChangeEvent<TValue extends DataTableValueArray> {
     /**
      * Browser event.
      */
@@ -376,6 +376,30 @@ interface DataTableSelectionCellChangeEvent<TValue extends DataTableValueArray> 
      * Selection objects.
      */
     value: DataTableCellSelection<TValue>;
+    /**
+     * Type of the selection.
+     */
+    type?: 'cell';
+    /**
+     * Extra options.
+     */
+    [key: string]: any;
+}
+
+/**
+ * Custom cell multiple selection change event.
+ * @see {@link DataTableProps.onSelectionChange}
+ * @event
+ */
+interface DataTableSelectionCellMultipleChangeEvent<TValue extends DataTableValueArray> {
+    /**
+     * Browser event.
+     */
+    originalEvent: React.SyntheticEvent;
+    /**
+     * Selection objects.
+     */
+    value: Array<DataTableCellSelection<TValue>>;
     /**
      * Type of the selection.
      */
@@ -1013,33 +1037,70 @@ export interface DataTablePassThroughOptions {
 }
 
 /**
- * Defines current options in DataTable bodyRow.
+ * Defines current options in DataTable BodyRow which is the table <TR> element.
  */
 export interface DataTableBodyRowContext {
+    /**
+     * Whether the row is selected.
+     */
     selected: boolean;
+    /**
+     * Whether the row is selectable.
+     */
     selectable: boolean;
+    /**
+     * Whether the rows have striped styling.
+     */
     stripedRows: boolean;
+    /**
+     * Index of the row. Note: this is not the index of the value array its the index of the row <TR in the table.
+     */
     index: number;
 }
 
 /**
- * Defines current inline state in DataTable bodyRow.
+ * Defines current inline state in DataTable BodyRow which is the table <TR> element.
  */
 export interface DataTableBodyRowState {
+    /**
+     * Whether the row is in editing mode.
+     */
     editing: boolean;
 }
 
 /**
- * Custom passthrough(pt) option method for bodyRow.
+ * Custom passthrough(pt) option method for BodyRow which is the table <TR> element.
  */
 export interface DataTableBodyRowPassThroughMethodOptions<TValue extends DataTableValueArray> {
+    /**
+     * Name of the component.
+     */
     hostName: string;
+    /**
+     * Current context of the bodyRow.
+     */
     context: DataTableBodyRowContext;
+    /**
+     * Parent options.
+     */
     parent: DataTablePassThroughMethodOptions<TValue>;
+    /**
+     * Component props.
+     */
     props: DataTableBaseProps<TValue>;
+    /**
+     * Current state of the bodyRow.
+     */
     state: DataTableBodyRowState;
 }
 
+/**
+ * Type for sort order values.
+ * - 1: Ascending order
+ * - 0: No sorting
+ * - -1: Descending order
+ * - null or undefined: No sorting
+ */
 type SortOrder = 1 | 0 | -1 | null | undefined;
 
 /**
@@ -1064,6 +1125,45 @@ interface DataTableBaseProps<TValue extends DataTableValueArray> extends Omit<Re
      * @defaultValue 960px
      */
     breakpoint?: string | undefined;
+    /**
+     * Whether to enable cell memoization.
+     *
+     * When the memoization is enabled, be sure to:
+     *      1- Update the value prop (i.e., row data) to trigger a re-render of the cells of a given row.
+     *      2- Where necessary, use the spread operator (...) when updating the value prop objs which creates new fresh
+     *      objects and avoids mutating the same objects.
+     *
+     * When the memoization is disabled, a re-render of the datatable will trigger a re-render of all cells, which can
+     * lead to performance issues with large datasets and is therefore not recommended.
+     * @defaultValue true
+     */
+    cellMemo?: boolean;
+    /**
+     * The cell props to be checked at memoization.
+     *
+     * Possible cell props are:
+     *     'hostName', 'allowCellSelection', 'cellMemo', 'cellMemoProps', 'cellMemoPropsDepth', 'cellClassName', 'checkIcon', 'collapsedRowIcon',
+     *     'field', 'resolveFieldData', 'column', 'cProps', 'dataKey', 'editMode', 'editing', 'editingMeta', 'onEditingMetaChange', 'editingKey',
+     *     'getEditingRowData', 'expanded', 'expandedRowIcon', 'frozenRow', 'frozenCol', 'alignFrozenCol', 'index', 'isSelectable', 'onCheckboxChange',
+     *     'onClick', 'onMouseDown', 'onMouseUp', 'onRadioChange', 'onRowEditCancel', 'onRowEditInit', 'onRowEditSave', 'onRowToggle', 'responsiveLayout',
+     *     'rowData', 'rowEditorCancelIcon', 'rowEditorInitIcon', 'rowEditorSaveIcon', 'rowIndex', 'rowSpan', 'selectOnEdit', 'isRowSelected', 'isCellSelected',
+     *     'selectionAriaLabel', 'showRowReorderElement', 'showSelectionElement', 'tabIndex', 'getTabIndex', 'tableProps', 'tableSelector', 'value',
+     *     'getVirtualScrollerOption', 'ptCallbacks', 'metaData', 'unstyled', 'findNextSelectableCell', 'findPrevSelectableCell', 'findDownSelectableCell',
+     *     'findUpSelectableCell', 'focusOnElement', 'focusOnInit', 'updateStickyPosition'
+     *
+     * IMPORTANT: Including a function to be checked will in general disable the memoization in practice, since functions are
+     * compared by reference.
+     *
+     * @defaultValue ['rowData', 'field', 'allowCellSelection', 'isCellSelected', 'editMode', 'index', 'tabIndex',
+     * 'editing', 'expanded', 'editingMeta', 'frozenCol', 'alignFrozenCol']
+     */
+    cellMemoProps?: string[];
+    /**
+     * The comparison depth when checking cell props (e.g., rowData) at memoization.
+     *
+     * @defaultValue 1
+     */
+    cellMemoPropsDepth?: number;
     /**
      * Icon to display in the checkbox.
      */
@@ -1775,7 +1875,7 @@ interface DataTablePropsMultiple<TValue extends DataTableValueArray> extends Dat
  * Defines valid properties in DataTable component. In addition to these, all properties of HTMLDivElement can be used in this component.
  * @group Properties
  */
-interface DataTablePropsCell<TValue extends DataTableValueArray> extends DataTableBaseProps<TValue> {
+interface DataTablePropsCellSingle<TValue extends DataTableValueArray> extends DataTableBaseProps<TValue> {
     /**
      * Whether to cell selection is enabled or not.
      * @defaultValue false
@@ -1784,7 +1884,7 @@ interface DataTablePropsCell<TValue extends DataTableValueArray> extends DataTab
     /**
      * Specifies the selection mode, valid values are "single", "multiple", "radiobutton" and "checkbox".
      */
-    selectionMode: 'single' | 'multiple';
+    selectionMode: 'single';
     /**
      * Selected cells.
      */
@@ -1796,16 +1896,46 @@ interface DataTablePropsCell<TValue extends DataTableValueArray> extends DataTab
     onContextMenuSelectionChange?(event: DataTableContextMenuMultipleSelectionChangeEvent<TValue>): void;
     /**
      * Callback to invoke when selection changes.
-     * @param {DataTableSelectionCellChangeEvent<TValue>} event - Custom selection change event.
+     * @param {DataTableSelectionCellSingleChangeEvent<TValue>} event - Custom selection change event.
      */
-    onSelectionChange?(event: DataTableSelectionCellChangeEvent<TValue>): void;
+    onSelectionChange?(event: DataTableSelectionCellSingleChangeEvent<TValue>): void;
 }
 
 /**
  * Defines valid properties in DataTable component. In addition to these, all properties of HTMLDivElement can be used in this component.
  * @group Properties
  */
-export type DataTableProps<TValue extends DataTableValueArray> = DataTablePropsSingle<TValue> | DataTablePropsCell<TValue> | DataTablePropsMultiple<TValue>;
+interface DataTablePropsCellMultiple<TValue extends DataTableValueArray> extends DataTableBaseProps<TValue> {
+    /**
+     * Whether to cell selection is enabled or not.
+     * @defaultValue false
+     */
+    cellSelection: true;
+    /**
+     * Specifies the selection mode, valid values are "single", "multiple", "radiobutton" and "checkbox".
+     */
+    selectionMode: 'multiple';
+    /**
+     * Selected cells.
+     */
+    selection: Array<DataTableCellSelection<TValue>> | null;
+    /**
+     * Callback to invoke when a row selected with right click.
+     * @param {DataTableRowEvent} event - Custom row event.
+     */
+    onContextMenuSelectionChange?(event: DataTableContextMenuMultipleSelectionChangeEvent<TValue>): void;
+    /**
+     * Callback to invoke when selection changes.
+     * @param {DataTableSelectionCellMultipleChangeEvent<TValue>} event - Custom selection change event.
+     */
+    onSelectionChange?(event: DataTableSelectionCellMultipleChangeEvent<TValue>): void;
+}
+
+/**
+ * Defines valid properties in DataTable component. In addition to these, all properties of HTMLDivElement can be used in this component.
+ * @group Properties
+ */
+export type DataTableProps<TValue extends DataTableValueArray> = DataTablePropsSingle<TValue> | DataTablePropsCellSingle<TValue> | DataTablePropsMultiple<TValue> | DataTablePropsCellMultiple<TValue>;
 
 /**
  * **PrimeReact - DataTable<TValue**
@@ -1931,4 +2061,9 @@ export declare class DataTable<TValue extends DataTableValueArray> extends React
      * @return {VirtualScroller | null} Virtual scroller instance
      */
     public getVirtualScroller(): VirtualScroller | null;
+    /**
+     * Used to get the processed data.
+     * @return {TValue} sorted and filtered data
+     */
+    public getProcessedData(): TValue;
 }
