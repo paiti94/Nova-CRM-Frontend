@@ -40,7 +40,10 @@
     "react-select": "^5.10.1",
     "recharts": "^2.12.1",
     "socket.io-client": "^4.7.4",
-    "zustand": "^4.5.1"
+    "zustand": "^4.5.1",
+    "vite": "5.4.10",
+    "@vitejs/plugin-react": "4.3.3",
+    "typescript": "5.5.4"
   },
   "devDependencies": {
     "@types/auth0-js": "^9.21.6",
@@ -50,12 +53,10 @@
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
-    "@vitejs/plugin-react": "4.3.3",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
     "postcss-import": "^16.1.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "5.5.4",
-    "vite": "5.4.10"    
+    "typescript": "5.5.4"
   }
 }
